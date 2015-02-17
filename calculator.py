@@ -1,4 +1,4 @@
-
+import sys
 math_list = ["add", "subtract", "multiply", "divide"]
 
 
@@ -23,65 +23,30 @@ def application(environ, start_response):
 
 
 def resolve_path(path):
+    """Depending on what url is passed, this will return the correlated problem/answer"""
     if path is '/':
         return home_page()
+    # Splits operator from numbers in uri
     address_list = path.lstrip('/').split('/')
+    # Pulls the type of math to be done from the uri
     math = address_list[0]
-    numbers = map(int, address_list[1:])
+    # Converts string numbers to float, then back to string to allow eval statement
+    # to function properly with division of uneven numbers 
+    numbers = map(str, map(float, address_list[1:]))
     if len(numbers) <= 1 and math in math_list:
         return "<h1>You need to provide at least two numbers!</h1>"
-
-    if math == "add":
-        return add(numbers)
-    elif math == "subtract":
-        return subtract(numbers)
-    elif math == "multiply":
-        return multiply(numbers)
-    elif math == "divide":
-        return divide(numbers)
+    if math in math_list:
+        operators = {"add": " + ", "subtract": " - ", "multiply": " * ", "divide": " / "}
+        problem = ""
+        for num in numbers:
+            problem += num + operators[math]
+        # Removing the last 2 removes an ending space and operator from string
+        problem = problem[:-2]
+        answer = str(eval(problem))
+        return "{} = <b>{}</b>".format(problem, answer)
 
     # we get here if no url matches
     raise NameError
-
-def add(numbers):
-    problem = '+'.join(map(str,numbers))
-    answer = str(sum(numbers))
-    response = formated('+', numbers, answer)
-    return response
-
-def subtract(numbers):
-    first_num = numbers[0]
-    rest = numbers[1:]
-    for num in rest:
-        first_num -= num
-    answer = str(first_num)
-    response = formated('-', numbers, answer)
-    return response
-
-
-def multiply(numbers):
-    first_num = numbers[0]
-    rest = numbers[1:]
-    for num in rest:
-        first_num *= num
-    answer = str(first_num)
-    response = formated('*', numbers, answer)
-    return response
-
-def divide(numbers):
-    first_num = numbers[0]
-    rest = numbers[1:]
-    for num in rest:
-        first_num /= num
-    answer = str(first_num)
-    response = formated('/', numbers, answer)
-    return response
-
-def formated(operator, numbers, answer):
-    problem = operator.join(map(str, numbers))
-    answer = "{} = {}".format(problem, answer)
-    return answer
-
 
 
 def home_page():
@@ -95,9 +60,7 @@ def home_page():
     return home
 
 
-
-
 if __name__ == '__main__':
     from wsgiref.simple_server import make_server
-    srv = make_server('localhost', 8088, application)
+    srv = make_server('localhost', 8088, application) # Please note using 8088 port number
     srv.serve_forever()
